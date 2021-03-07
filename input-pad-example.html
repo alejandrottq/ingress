@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=302, user-scalable=no" />
+    <link rel="stylesheet" href="black.css" />
+    <script type="text/javascript" src="glyph-tools.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-dic.js" charset="utf-8"></script>
+    <style>
+      #page { width: 302px;}
+      #control { line-height: 1.5;}
+    </style>
+    <title>Input Pad Example - Ingress Glyph Tools</title>
+
+    <!-- for webapp support -->
+    <link rel="apple-touch-icon" sizes="180x180" href="webapp-resources/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-16x16.png" sizes="16x16" />
+    <link rel="manifest" href="webapp-manifest.json" />
+    <link rel="mask-icon" href="webapp-resources/safari-pinned-tab.svg" color="#5bbad5" />
+    <link rel="shortcut icon" href="webapp-resources/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Ingress Glyph Tools" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="application-name" content="Ingress Glyph Tools" />
+    <meta name="msapplication-config" content="webapp-browserconfig.xml" />
+    <meta name="theme-color" content="#ffffff" />
+    <script type="text/javascript" src="webapp-resources/common.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div id="page">
+      <div id="glyph-pad">
+      </div>
+      <div id="control">
+        <input type="button" value="Clear" onclick="glyphPad.clearGlyph()" />
+        <input type="button" value="Undo" onclick="glyphPad.removeLastEdge()" />
+        <br />
+        Code:<input type="text" id="glyph-code" /><input type="button" value="Set" onclick="setGlyphFromCode(glyphCode.value)" /><br />
+        Word:<input type="text" id="glyph-word" /><input type="button" value="Set" onclick="setGlyphFromWord(glyphWord.value)" /><br />
+        <a href="index.html">Ingress Glyph Tools</a>
+      </div>
+    </div>
+
+    <script>
+      var gm9igt = gm9.IngressGlyphTools;
+      var glyphPad = gm9igt.createInputPad({
+        size: 300,
+        style: {
+          color: "white"
+        }
+      });
+      document.getElementById("glyph-pad").appendChild(glyphPad);
+      glyphPad.addEventListener("glyphchange", function(e){
+        var glyph = glyphPad.getGlyph();
+        glyphCode.value = glyph.toString();
+        glyphWord.value = gm9igt.glyphDic.getWordsFromGlyph(glyph);
+      }, false);
+
+      var glyphCode = document.getElementById("glyph-code");
+      var glyphWord = document.getElementById("glyph-word");
+
+      function setGlyphFromCode(code){
+          glyphPad.setGlyph(gm9igt.Glyph.fromString(code))
+      }
+      function setGlyphFromWord(word){
+          glyphPad.setGlyph((gm9igt.glyphDic.getGlyphsFromWord(word) || [null])[0]);
+      }
+
+      // Parse Query String
+      function getQueryParams()
+      {
+          var result = {};
+          var q = document.location.search.substr(1);
+          if(q.length > 0){
+              var ps = q.split("&");
+              for(var pi = 0; pi < ps.length; ++pi){
+                  var nv = ps[pi].split("=");
+                  result[nv[0]] = decodeURI(nv[1].replace(/\+/g, " "));
+              }
+          }
+          return result;
+      }
+      var queryParams = getQueryParams();
+      if(queryParams["c"]){
+          setGlyphFromCode(queryParams["c"]);
+      }
+      if(queryParams["w"]){
+          setGlyphFromWord(queryParams["w"]);
+      }
+
+      // Dynamic Viewport Controll
+      gm9igt.controlViewportMetaElement(document.getElementById("page"));
+    </script>
+  </body>
+</html>

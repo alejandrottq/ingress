@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=302" />
+    <link rel="stylesheet" href="black.css" />
+    <script type="text/javascript" src="glyph-tools.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-dic.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-sequence-dic.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-game.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-game-record.js" charset="utf-8"></script>
+    <title>Glyph Game Clone - Ingress Glyph Tools</title>
+
+    <!-- for webapp support -->
+    <link rel="apple-touch-icon" sizes="180x180" href="webapp-resources/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-16x16.png" sizes="16x16" />
+    <link rel="manifest" href="webapp-manifest.json" />
+    <link rel="mask-icon" href="webapp-resources/safari-pinned-tab.svg" color="#5bbad5" />
+    <link rel="shortcut icon" href="webapp-resources/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Ingress Glyph Tools" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="application-name" content="Ingress Glyph Tools" />
+    <meta name="msapplication-config" content="webapp-browserconfig.xml" />
+    <meta name="theme-color" content="#ffffff" />
+    <script type="text/javascript" src="webapp-resources/common.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <script>
+      //<![CDATA[
+      (function(){
+          var gm9igt = gm9.IngressGlyphTools;
+
+          // Parse Query String
+          // ex:
+          //   ?s=clear all,open all,discover,truth
+          //   ?s=creativity(1216274548597a9a),grow
+          //   ?s=creativity(idea),grow
+
+          function getQueryParamsAsObject()
+          {
+             var result = {};
+             var q = document.location.search.substr(1);
+             if(q.length > 0){
+                 var ps = q.split("&");
+                 ps.forEach(function(kv){var a = kv.split("="); var key = a[0].toLowerCase(); var value = a[1] && decodeURI(a[1].replace(/\+/g, " ")); result[key] = value;});
+             }
+             return result;
+          }
+
+          var qs = getQueryParamsAsObject();
+          var sequence = [];
+          if(qs.s){
+              // s=create,idea,open all
+              var words = qs.s.split(",");
+              sequence = words.map(gm9igt.glyphDic.getWordGlyphFromString).filter(function(elem){return elem != null;});
+          }
+
+          //
+          // Start Game
+          //
+
+          if(sequence.length > 0){
+              var MAX_GLYPH_COUNT = 7;
+              if(sequence.length > MAX_GLYPH_COUNT){
+                  sequence.length = MAX_GLYPH_COUNT;
+              }
+              var gameObj = gm9igt.glyphGame.createGame();
+              gameObj.speakResultGlyphName = (qs.speak == "1");
+              var parentNode = gm9igt.getLastScriptNode().parentNode;
+              parentNode.appendChild(gameObj.element);
+              gm9igt.controlViewportMetaElement(gameObj.element);
+              var TIME_LIMIT = [20000, 20000, 18000, 16000, 15000];
+              gameObj.onEndGame = function(){
+                  parentNode.removeChild(gameObj.element);
+                  window.close();
+              };
+              gameObj.hack(
+                  sequence,
+                  TIME_LIMIT[Math.min(sequence.length - 1, TIME_LIMIT.length - 1)]);
+          }
+          else{
+              gm9igt.glyphGame.putSimpleGame(true);
+          }
+      })();
+      // ]]>
+    </script>
+    <div>
+      <a href="index.html">Ingress Glyph Tools</a>
+    </div>
+  </body>
+</html>

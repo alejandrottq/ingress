@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="black.css" />
+    <script type="text/javascript" src="glyph-tools.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-tools-ui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="glyph-dic.js" charset="utf-8"></script>
+    <title>Glyph List - Ingress Glyph Tools</title>
+    <style>
+        a { color: white;}
+    </style>
+
+    <!-- for webapp support -->
+    <link rel="apple-touch-icon" sizes="180x180" href="webapp-resources/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="webapp-resources/favicon-16x16.png" sizes="16x16" />
+    <link rel="manifest" href="webapp-manifest.json" />
+    <link rel="mask-icon" href="webapp-resources/safari-pinned-tab.svg" color="#5bbad5" />
+    <link rel="shortcut icon" href="webapp-resources/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Ingress Glyph Tools" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="application-name" content="Ingress Glyph Tools" />
+    <meta name="msapplication-config" content="webapp-browserconfig.xml" />
+    <meta name="theme-color" content="#ffffff" />
+    <script type="text/javascript" src="webapp-resources/common.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <a href="index.html">Ingress Glyph Tools</a>
+    <script>
+      //<![CDATA[
+      (function(){
+          var gm9igt = gm9.IngressGlyphTools;
+
+          var listDiv = document.createElement("div");
+
+          //
+          // Parse Query String
+          // ex:
+          //   c=01&w=create&c=0201&s=yyyy(163a596a9a)
+          //   s=clear,your,mind,creativity(1216274548597a9a),grow
+          //
+          var optSpeak = false;
+          var optUI = false;
+          function getGlyphsFromQueryParams()
+          {
+              var MAX_GLYPH_COUNT = 64;
+              var result = [];
+              function addWordGlyph(w, g){if(w!=null && g!=null){ result.push({word:w, glyph:g});}}
+              var q = document.location.search.substr(1);
+              if(q.length > 0){
+                  var ps = q.split("&");
+                  for(var pi = 0; pi < ps.length && pi < MAX_GLYPH_COUNT; ++pi){
+                      var kv = ps[pi].split("=");
+                      var key = kv[0].toLowerCase();
+                      var value = decodeURI(kv[1].replace(/\+/g, " "));
+                      var glyph = null;
+                      var word = null;
+                      switch(key){
+                      case "c": glyph = gm9igt.Glyph.fromString(value); word = (gm9igt.glyphDic.getWordsFromGlyph(glyph) || [""])[0]; addWordGlyph(word, glyph); break;
+                      case "w": addWordGlyph(value, gm9igt.glyphDic.getGlyphsFromWord(value)[0]); break;
+                      case "s": value.split(",").map(gm9igt.glyphDic.getWordGlyphFromString).forEach(function(wg){if(wg){addWordGlyph(wg.word, wg.glyph);}}); break;
+                      // options
+                      case "speak": optSpeak = (value == "1"); break;
+                      case "ui": optUI = (value == "1"); break;
+                      }
+                  }
+              }
+              return result.length > 0 ? result : null;
+          }
+          function getDefaultGlyphList()
+          {
+              var result = [];
+              var words = gm9igt.glyphDic.getAllWords();
+              for(var wi = 0; wi < words.length; ++wi){
+                  var key = words[wi];
+                  var glyphs = gm9igt.glyphDic.getGlyphsFromWord(key);
+                  for(var gi = 0; gi < glyphs.length; ++gi){
+                      result.push({word:key, glyph:glyphs[gi]});
+                  }
+              }
+              result.sort(function(a,b){return a.word.localeCompare(b.word);});
+              return result;
+          }
+
+          var arrWordGlyph = getGlyphsFromQueryParams() || getDefaultGlyphList();
+
+          var GLYPH_SIZE = 64;
+          var GLYPH_STYLE = {
+              color: "white",
+              grid:{
+                  visible:true,
+                  stroke:"none",
+                  fill:"white",
+                  nodeRadius:0.2
+              },
+              hexagon:{visible:true}};
+
+          for(var i = 0; i < arrWordGlyph.length; ++i){
+              var entry = arrWordGlyph[i];
+              var entryDiv = document.createElement("div");
+              entryDiv.style.display = "inline-block";
+              entryDiv.style.margin = "8px";
+              entryDiv.style.textAlign = "center";
+
+              var glyphUrl = "input-pad-example.html?c=" + entry.glyph.toString();
+
+              var glyphLink = document.createElement("a");
+              glyphLink.setAttribute("href", glyphUrl);
+              glyphLink.appendChild(gm9igt.createGlyphImage(entry.glyph, GLYPH_SIZE, GLYPH_STYLE));
+              entryDiv.appendChild(glyphLink);
+
+              var wordLink = document.createElement("a");
+              wordLink.setAttribute("href", glyphUrl);
+              wordLink.appendChild(document.createTextNode(entry.word.toUpperCase()));
+              var wordDiv = document.createElement("div");
+              wordDiv.appendChild(wordLink);
+              entryDiv.appendChild(wordDiv);
+
+              listDiv.appendChild(entryDiv);
+          }
+
+          gm9igt.getLastScriptNode().parentNode.appendChild(listDiv);
+
+
+          // Speech
+
+          var sequenceText = arrWordGlyph.map(function(wg){return wg.word;}).join(" ");
+          if(optSpeak){
+              speakText(sequenceText);
+          }
+          function speakText(text){
+              if(window.speechSynthesis && window.SpeechSynthesisUtterance){
+                  var msg = new SpeechSynthesisUtterance();
+                  msg.text = text;
+                  msg.lang = 'en-US';
+                  speechSynthesis.speak(msg);
+              }
+          }
+
+          // UI
+          function openGlyphGame(){
+              window.location.href = "./example-glyph-game.html?" +
+                  "s=" + arrWordGlyph.map(function(wg){return wg.word + "(" + wg.glyph.toString() + ")";}).join(",") +
+                  (optSpeak ? "&speak=1" : "");
+          }
+          if(optUI){
+          var uibar = document.createElement("div");
+              if(window.speechSynthesis){
+                  gm9igt.ui.putButton(uibar, "Speak", function(){ speakText(sequenceText);});
+                  uibar.appendChild(document.createTextNode(" "));
+              }
+              gm9igt.ui.putButton(uibar, "Hack", function(){ openGlyphGame();});
+              uibar.appendChild(document.createTextNode(" "));
+              document.body.appendChild(uibar);
+          }
+      })();
+      // ]]>
+    </script>
+  </body>
+</html>
